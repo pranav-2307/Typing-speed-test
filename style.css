@@ -1,49 +1,57 @@
+:root {
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --text: #111;
+  --muted: #6b7280;
+  --green: #059669;
+  --red: #dc2626;
+  --accent: #6366f1;
+}
+
+body.dark {
+  --bg: #1e1e1e;
+  --card: #2c2c2c;
+  --text: #f0f0f0;
+  --muted: #aaa;
+}
+
+* { box-sizing: border-box; }
 body {
+  margin: 0;
   font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: #f4f6f9;
-  margin: 0;
+  padding: 20px;
 }
-
 .container {
-  width: 600px;
-  background: white;
+  max-width: 800px;
+  width: 100%;
+  background: var(--card);
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-
+header { display: flex; justify-content: space-between; align-items: center; }
+#theme-toggle { cursor: pointer; padding: 6px 12px; border: none; border-radius: 8px; background: var(--accent); color: white; }
+.controls { display: flex; gap: 10px; margin-top: 15px; align-items: center; }
+#timer { margin-left: auto; font-weight: bold; }
+.text-area { margin-top: 15px; }
 #paragraph {
-  background: #f0f0f0;
+  background: #f8fafc;
   padding: 15px;
   border-radius: 8px;
   min-height: 80px;
-  margin-bottom: 10px;
+  line-height: 1.5;
 }
-
-#input {
-  width: 100%;
-  height: 100px;
-  padding: 10px;
-  font-size: 16px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-}
-
-.results {
-  display: flex;
-  justify-content: space-around;
-  margin: 15px 0;
-}
-
-.correct {
-  color: green;
-}
-
-.incorrect {
-  color: red;
-}
+body.dark #paragraph { background: #3c3c3c; }
+#paragraph span.correct { color: var(--green); }
+#paragraph span.incorrect { color: var(--red); }
+#paragraph span.active { background: rgba(99,102,241,0.1); border-bottom: 2px solid rgba(99,102,241,0.3); }
+#input { width: 100%; min-height: 100px; margin-top: 10px; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; resize: vertical; }
+.progress-container { width: 100%; height: 10px; background: #ddd; border-radius: 8px; margin-top: 8px; }
+#progress-bar { height: 100%; width: 0%; background: var(--accent); border-radius: 8px; transition: width 0.2s; }
+.stats { display: flex; justify-content: space-between; margin-top: 15px; font-size: 16px; flex-wrap: wrap; gap: 10px; }
+button#restart { margin-top: 15px; padding: 10px 15px; border-radius: 8px; border: none; background: var(--accent); color: white; cursor: pointer; }
+.leaderboard { margin-top: 20px; }

@@ -1,107 +1,156 @@
-const paragraphs = [
-  "The quick brown fox jumps over the lazy dog.",
-  "JavaScript is the language of the web.",
-  "Typing speed test helps you improve your skills.",
-  "Practice daily to enhance accuracy and speed."
-];
+const paragraphEl = document.getElementById('paragraph');
+const inputEl = document.getElementById('input');
+const timeLeftEl = document.getElementById('time-left');
+const wpmEl = document.getElementById('wpm');
+const accuracyEl = document.getElementById('accuracy');
+const errorsEl = document.getElementById('errors');
+const bestEl = document.getElementById('best');
+const restartBtn = document.getElementById('restart');
+const progressBar = document.getElementById('progress-bar');
+const timeSelect = document.getElementById('time-select');
+const scoreList = document.getElementById('score-list');
+const themeToggle = document.getElementById('theme-toggle');
 
-const paragraphEl = document.getElementById("paragraph");
-const inputEl = document.getElementById("input");
-const timerEl = document.getElementById("timer");
-const wpmEl = document.getElementById("wpm");
-const accuracyEl = document.getElementById("accuracy");
-const errorsEl = document.getElementById("errors");
-const bestEl = document.getElementById("best");
-const restartBtn = document.getElementById("restart");
-
-let time = 60;
+let TIME = parseInt(timeSelect.value);
+let timeLeft = TIME;
 let timer = null;
+let started = false;
+let startTime = null;
+let totalTyped = 0;
+let correctChars = 0;
 let errors = 0;
-let charactersTyped = 0;
-let currentParagraph = "";
-let bestWPM = localStorage.getItem("bestWPM") || 0;
-
-// Load best score
+let currentParagraph = '';
+let bestWPM = parseInt(localStorage.getItem('bestWPM') || '0');
 bestEl.textContent = bestWPM;
 
-function loadParagraph() {
-  currentParagraph = paragraphs[Math.floor(Math.random() * paragraphs.length)];
-  paragraphEl.innerHTML = "";
-  currentParagraph.split("").forEach(char => {
-    let span = document.createElement("span");
-    span.innerText = char;
+// Theme toggle
+themeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  if(document.body.classList.contains('dark')) themeToggle.textContent = '☀️ Light Mode';
+  else themeToggle.textContent = '🌙 Dark Mode';
+});
+
+// Pick random paragraph
+function pickParagraph(){
+  const arr = window.PARAGRAPHS;
+  currentParagraph = arr[Math.floor(Math.random() * arr.length)];
+  paragraphEl.innerHTML = '';
+  currentParagraph.split('').forEach(ch=>{
+    const span = document.createElement('span');
+    span.innerText = ch;
     paragraphEl.appendChild(span);
   });
 }
 
-function startTimer() {
-  if (timer) return; // prevent multiple intervals
-  timer = setInterval(() => {
-    if (time > 0) {
-      time--;
-      timerEl.innerText = `Time: ${time}s`;
-    } else {
-      finishTest();
-    }
-  }, 1000);
+// Reset test
+function resetTest(){
+  clearInterval(timer);
+  timer=null; started=false;
+  startTime=null; totalTyped=0; correctChars=0; errors=0;
+  TIME=parseInt(timeSelect.value);
+  timeLeft=TIME;
+  timeLeftEl.textContent = timeLeft;
+  wpmEl.textContent = 0;
+  accuracyEl.textContent='0%';
+  errorsEl.textContent=0;
+  progressBar.style.width='0%';
+  inputEl.disabled=false;
+  inputEl.value='';
+  pickParagraph();
+  loadLeaderboard();
+  inputEl.focus();
 }
 
-function checkInput() {
-  startTimer();
-  const input = inputEl.value.split("");
-  const spanArray = paragraphEl.querySelectorAll("span");
-  errors = 0;
-  
-  spanArray.forEach((char, index) => {
-    if (!input[index]) {
-      char.classList.remove("correct", "incorrect");
-    } else if (input[index] === char.innerText) {
-      char.classList.add("correct");
-      char.classList.remove("incorrect");
-    } else {
-      char.classList.add("incorrect");
-      char.classList.remove("correct");
-      errors++;
-    }
+// Timer start
+function startTimer(){
+  if(started) return;
+  started=true;
+  startTime=Date.now();
+  timer = setInterval(()=>{
+    timeLeft--;
+    timeLeftEl.textContent=timeLeft;
+    if(timeLeft<=0) finishTest();
+  },1000);
+}
+
+// Update stats
+function updateStats(){
+  const input=inputEl.value;
+  totalTyped=input.length;
+  const spans=paragraphEl.querySelectorAll('span');
+  correctChars=0; errors=0;
+
+  spans.forEach((span,i)=>{
+    span.classList.remove('correct','incorrect','active');
+    if(!input[i]){}
+    else if(input[i]===span.innerText) correctChars++;
+    else errors++;
   });
 
-  charactersTyped++;
-  errorsEl.innerText = errors;
-}
-
-function finishTest() {
-  clearInterval(timer);
-  inputEl.disabled = true;
-
-  let wordsTyped = inputEl.value.trim().split(" ").length;
-  let wpm = Math.round((wordsTyped / 60) * (60 - time));
-  let accuracy = Math.round(((charactersTyped - errors) / charactersTyped) * 100);
-
-  wpmEl.innerText = wpm;
-  accuracyEl.innerText = `${accuracy}%`;
-
-  if (wpm > bestWPM) {
-    localStorage.setItem("bestWPM", wpm);
-    bestEl.textContent = wpm;
+  // active char
+  for(let i=0;i<spans.length;i++){
+    if(!spans[i].classList.contains('correct') && !spans[i].classList.contains('incorrect')){
+      spans[i].classList.add('active');
+      break;
+    }
   }
+
+  // progress bar
+  let progress=Math.min((totalTyped/spans.length)*100,100);
+  progressBar.style.width=progress+'%';
+
+  // real-time WPM
+  const elapsedSec=Math.max((Date.now()-startTime)/1000,1);
+  const elapsedMin=elapsedSec/60;
+  const netWords=Math.max((totalTyped-errors)/5,0);
+  const netWPM=Math.round(netWords/elapsedMin);
+  wpmEl.textContent=isFinite(netWPM)?netWPM:0;
+  accuracyEl.textContent=totalTyped?Math.round((correctChars/totalTyped)*100)+'%':'0%';
+  errorsEl.textContent=errors;
 }
 
-restartBtn.addEventListener("click", () => {
+// Finish test
+function finishTest(){
   clearInterval(timer);
-  timer = null;
-  time = 60;
-  charactersTyped = 0;
-  errors = 0;
-  timerEl.innerText = `Time: ${time}s`;
-  inputEl.value = "";
-  inputEl.disabled = false;
-  wpmEl.innerText = 0;
-  accuracyEl.innerText = "0%";
-  errorsEl.innerText = 0;
-  loadParagraph();
+  inputEl.disabled=true;
+  const elapsedSec=(TIME-timeLeft)||1;
+  const elapsedMin=elapsedSec/60;
+  const netWords=Math.max((totalTyped-errors)/5,0);
+  const finalWPM=Math.round(netWords/elapsedMin);
+  const finalAccuracy=totalTyped?Math.round((correctChars/totalTyped)*100):0;
+  wpmEl.textContent=finalWPM;
+  accuracyEl.textContent=finalAccuracy+'%';
+  saveScore(finalWPM,finalAccuracy);
+  if(finalWPM>bestWPM){bestWPM=finalWPM;localStorage.setItem('bestWPM',bestWPM);bestEl.textContent=bestWPM;}
+}
+
+// Save score to leaderboard (localStorage)
+function saveScore(wpm,acc){
+  let scores=JSON.parse(localStorage.getItem('scores')||'[]');
+  scores.unshift({date:new Date().toLocaleString(), wpm, acc});
+  if(scores.length>5) scores=scores.slice(0,5);
+  localStorage.setItem('scores',JSON.stringify(scores));
+  loadLeaderboard();
+}
+
+// Load leaderboard
+function loadLeaderboard(){
+  let scores=JSON.parse(localStorage.getItem('scores')||'[]');
+  scoreList.innerHTML='';
+  scores.forEach(s=>{
+    const li=document.createElement('li');
+    li.textContent=`${s.date} - WPM: ${s.wpm}, Accuracy: ${s.acc}%`;
+    scoreList.appendChild(li);
+  });
+}
+
+// Events
+inputEl.addEventListener('input', ()=>{
+  startTimer();
+  updateStats();
 });
+restartBtn.addEventListener('click', resetTest);
+timeSelect.addEventListener('change', resetTest);
 
-inputEl.addEventListener("input", checkInput);
-
-// Initial load
-loadParagraph();
+// Init
+resetTest();
